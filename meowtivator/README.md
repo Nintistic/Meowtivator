@@ -1,4 +1,27 @@
-# Getting Started with Create React App
+# Meowtivator: Quest Log
+
+A retro pixel-themed quest management app built with React and Firebase.
+
+## Environment Setup
+
+Before running the app, you need to set up your environment variables:
+
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Fill in your Firebase configuration values in `.env`:
+   - Get your Firebase config from the Firebase Console
+   - Add all the required `REACT_APP_FIREBASE_*` variables
+
+3. (Optional) Add Spotify configuration if you want Spotify integration:
+   - `REACT_APP_SPOTIFY_CLIENT_ID`
+   - `REACT_APP_SPOTIFY_REDIRECT_URI`
+
+**Important:** Never commit your `.env` file to git. It's already in `.gitignore`.
+
+## Getting Started
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
