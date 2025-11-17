@@ -1,0 +1,94 @@
+{
+  "project_name": "Meowtivator: Quest Log",
+  "goal": "Develop a single-file React application using Firebase Firestore for real-time, gamified chore management with a retro pixel art UI.",
+  "architecture": {
+    "tech_stack": {
+      "frontend": "React (Single JSX File, Functional Components, Hooks)",
+      "database": "Firebase Firestore (Public Data for Real-Time Sync)",
+      "styling": "Tailwind CSS (Retro Pixel Theme)",
+      "navigation": "Four-page state-based routing"
+    },
+    "page_structure": [
+      {
+        "name": "DASHBOARD",
+        "purpose": "High-level overview: Display total XP, weekly XP, Star Coins, Fairness Gauge status, and current user rank.",
+        "content": ["High-level XP/Coin stats", "Fairness Gauge", "Link to all other pages"]
+      },
+      {
+        "name": "QUEST_LOG",
+        "purpose": "Task Management: Create, view, reserve, and track available tasks.",
+        "content": [
+          "Modal for creating new tasks (Name, Difficulty/XP, Recurrence Unit/Interval)",
+          "List of active and due tasks (Chore Name, XP, Due Date)",
+          "Actions: RESERVE Task",
+          "Tracking: Shows which user (if any) currently holds the reservation"
+        ]
+      },
+      {
+        "name": "FOCUS_MODE",
+        "purpose": "Completion and Time Tracking.",
+        "content": [
+          "Display reserved task name",
+          "Start/Pause/Finish Timer",
+          "Spotify Embed for ambient music (placeholder)",
+          "Action: COMPLETE Task (Triggers XP/Recurrence logic)"
+        ]
+      },
+      {
+        "name": "PROFILE_PAGE",
+        "purpose": "User Customization and Identification.",
+        "content": [
+          "Display Player ID and user's rank/stats",
+          "Input/Selection for Avatar/Profile Picture URL (stored in user profile)",
+          "Link to the Reward Hall"
+        ]
+      },
+      {
+        "name": "REWARD_HALL",
+        "purpose": "Gamification Customization and Leaderboards.",
+        "content": [
+          "Weekly XP Leaderboard",
+          "Monthly XP Contest (Tracking Monthly XP Change)",
+          "Settings for Fairness Threshold (User-defined XP gap)",
+          "Area for defining/tracking user-defined real-life Monthly Prize"
+        ]
+      },
+      {
+        "name": "HISTORY_LOG",
+        "purpose": "Archived Task Review.",
+        "content": ["List of all completed/archived tasks (Name, XP Earned, Time Spent, Completed By)"]
+      }
+    ]
+  },
+  "database_schema": {
+    "collection": "users",
+    "fields": [
+      {"name": "avatarUrl", "type": "string", "description": "URL of the user's profile image."},
+      {"name": "fairness_threshold", "type": "number", "description": "User-defined max acceptable XP difference (default: 1000)."}
+    ],
+    "collection": "chores",
+    "fields": [
+      {"name": "status", "type": "string", "values": ["active", "reserved", "completed", "archived"]},
+      {"name": "time_spent_ms", "type": "number", "description": "Time recorded in the Focus Session."},
+      {"name": "xp_value", "type": "number", "description": "Base XP awarded (100, 250, or 500)."}
+    ]
+  },
+  "core_logic": {
+    "XP_Delegation": {
+      "mechanism": "When the COMPLETE button is pressed in Focus Mode, the app must present a modal asking: 'Who completed this quest?' with a dropdown listing all users. The XP is applied to the selected user, regardless of who reserved/pressed the button.",
+      "required_field": "completed_for_id"
+    },
+    "Fairness_System": {
+      "trigger": "XP difference between highest and lowest weekly earners exceeds the user's fairness_threshold.",
+      "reward": "The lowest earner receives a 1.5x XP multiplier on the next completed task."
+    },
+    "Monthly_Reward": {
+      "tracking": "Track total XP earned since the 1st of the current month. The Reward Hall displays the leaderboard for this metric."
+    }
+  }
+}
+
+
+This detailed prompt is ready for your coding assistant. It covers everything we've discussed and ensures all future development is accurate and consistent with your vision for **Meowtivator: Quest Log**!
+
+Would you like to move directly into implementing the new **Profile Page** and the **XP Delegation Logic**?

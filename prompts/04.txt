@@ -1,0 +1,146 @@
+{
+  "goal": "Refactor the Meowtivator Profile page to match the new art direction (cozy pixel RPG + Adventure Time softness + retro stat card + 90s jacket colors) and implement the updated UX for stats, friend codes, and avatar selection.",
+  "tech": {
+    "stack": "React (current app), plain CSS or Tailwind is fine as long as the visual result matches the description.",
+    "font": "Press Start 2P (Google Fonts) already in use",
+    "note": "We are only changing the Profile page UI/markup/styling, not the global routing or backend logic."
+  },
+  "layout": {
+    "pageBackground": {
+      "type": "full-screen gradient",
+      "colors": [
+        "#34216d",
+        "#5176fd",
+        "#2fb1a8"
+      ],
+      "effects": {
+        "vignette": "subtle, darker at edges",
+        "pixelGrid": "optional 4px grid, very low opacity",
+        "scanlines": "very faint horizontal lines to keep CRT feel"
+      }
+    },
+    "mainFrame": {
+      "type": "CRT panel",
+      "position": "centered horizontally, with top and bottom padding",
+      "maxWidth": 1200,
+      "minHeight": "calc(100vh - 80px)",
+      "background": "#12091f",
+      "border": {
+        "outer": {
+          "color": "#000000",
+          "width": 4
+        },
+        "inner": {
+          "color": "#49297E",
+          "width": 4
+        }
+      },
+      "shadow": "0 20px 0 #000000"
+    },
+    "contentGrid": {
+      "columnsDesktop": 2,
+      "columnsMobile": 1,
+      "gap": 18,
+      "leftPane": "Player stats + friend code/add friend",
+      "rightPane": "Avatar selection"
+    }
+  },
+  "components": {
+    "header": {
+      "title": "MEOWTIVATOR: QUEST LOG",
+      "subtitle": "> PROFILE & AVATAR",
+      "nav": {
+        "buttons": [
+          { "label": "Dashboard", "variant": "secondary" },
+          { "label": "Reward Hall", "variant": "primary" }
+        ],
+        "note": "Remove extra Reward Hall buttons from the body; only keep the one in the nav."
+      }
+    },
+    "playerStatsCard": {
+      "title": "Player Stats",
+      "subtitle": "Your current quest résumé.",
+      "style": "retro stat card",
+      "background": "dark purple (#1c1133 to #251744 gradient)",
+      "border": {
+        "color": "#49297E",
+        "width": 3,
+        "outerShadow": "0 0 0 3px #000000, 0 8px 0 #000000"
+      },
+      "statsRow": [
+        {
+          "id": "totalXp",
+          "label": "Total XP",
+          "valueBinding": "player.totalXp",
+          "subtitle": "Lifetime quests",
+          "stripGradient": ["#00DB96", "#90DCFF", "#E10086", "#FDFB76"]
+        },
+        {
+          "id": "starCoins",
+          "label": "Star Coins",
+          "valueBinding": "player.starCoins",
+          "subtitle": "Spend in Reward Hall",
+          "stripGradient": ["#FDFB76", "#E10086", "#00DB96"]
+        }
+      ],
+      "removeRankTitle": true
+    },
+    "friendPanel": {
+      "title": "Friend Code & Party",
+      "layout": "block inside playerStatsCard, below stats row",
+      "background": "#0b0717",
+      "border": { "color": "#00DB96", "width": 3 },
+      "friendCodeRow": {
+        "label": "Friend Code",
+        "valueBinding": "player.friendCodeShort", 
+        "exampleValue": "N1NA-7F9D",
+        "copyButton": true,
+        "copyButtonLabel": "Copy",
+        "onCopy": "navigator.clipboard.writeText(friendCode)"
+      },
+      "addFriendRow": {
+        "label": "Add Friend",
+        "inputPlaceholder": "Enter friend code (e.g. N1NA-7F9D)",
+        "buttonLabel": "Add",
+        "onClick": "for now, just alert('Friend request sent to: ' + inputValue); backend logic will be wired later"
+      },
+      "helperText": "Short friend codes are mapped to long internal player IDs on the backend. This UI only handles the short code."
+    },
+    "avatarCard": {
+      "title": "Avatar Selection",
+      "subtitle": "Pick your pixel alter ego. The vacuum will respect you more.",
+      "layout": {
+        "gridMinWidth": 120,
+        "gap": 12
+      },
+      "avatarItem": {
+        "baseStyle": {
+          "background": "#1a1030",
+          "border": { "color": "#000000", "width": 3 },
+          "shadow": "0 4px 0 #000000",
+          "hoverTransform": "translateY(-2px)",
+          "selectedBackground": "linear-gradient(135deg, #49297E, #12091f)",
+          "selectedBorderColor": "#00DB96",
+          "selectedOutlineGradient": ["#00DB96", "#90DCFF", "#E10086", "#FDFB76"]
+        },
+        "spriteStyle": {
+          "type": "pixel art",
+          "size": 40,
+          "rendering": "pixelated",
+          "inspiration": "Adventure Time player-select grid + cozy RPG + Stranger Things Dustin stat card",
+          "colorPalette": [
+            "#151428",
+            "#241B39",
+            "#5C4BEA",
+            "#5176FD",
+            "#2FB1A8",
+            "#E10086",
+            "#F4D56E",
+            "#FDE48A",
+            "#F9F4E1"
+          ]
+        },
+        "avatars": [
+          { "id": "pixel-cat", "label": "Mint Mischief" },
+          { "id": "pixel-dog", "label": "Coalition Pup" },
+          { "id": "pixel-robot", "label": "V

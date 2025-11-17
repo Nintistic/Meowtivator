@@ -1,0 +1,194 @@
+{
+  "task": "Fix Quest Log behavior, restore frequency UI, remove manual XP input, implement recurring logic, and split quests into three sections.",
+  "context": {
+    "app": "Meowtivator: Quest Log",
+    "stack": ["React", "Firebase Firestore"],
+    "pages": ["QuestLogPage", "CreateQuestModal", "HistoryPage", "FocusModePage"]
+  },
+  "data_model": {
+    "Quest": {
+      "id": "string",
+      "title": "string",
+      "difficulty": "'easy' | 'medium' | 'hard'",
+      "xp": "number (derived from difficulty, not user input)",
+      "frequencyType": "'once' | 'daily' | 'weekly' | 'monthly'",
+      "frequencyInterval": "number (>=1, e.g. 1=every day, 2=every 2 days, etc.)",
+      "createdById": "string",
+      "createdByName": "string",
+      "reservedById": "string | null",
+      "reservedByName": "string | null",
+      "nextDueAt": "Timestamp (when this quest becomes available again)",
+      "isActive": "boolean (true by default; false only for one-time quests after completion)",
+      "lastFocusDurationSeconds": "number | null"
+    },
+    "QuestHistoryEntry": {
+      "id": "string",
+      "questId": "string",
+      "questTitle": "string",
+      "completedById": "string",
+      "completedByName": "string",
+      "completedAt": "Timestamp",
+      "xpAwarded": "number",
+      "reservedById": "string | null",
+      "reservedByName": "string | null",
+      "focusDurationSeconds": "number | null"
+    },
+    "collections": {
+      "quests": "stores Quest documents",
+      "quest_history": "stores QuestHistoryEntry documents"
+    }
+  },
+  "ui_requirements": {
+    "create_quest_modal": {
+      "restore_frequency_ui": {
+        "description": "Use two-column frequency control like before.",
+        "fields": [
+          {
+            "name": "frequencyType",
+            "label": "Frequency",
+            "type": "select",
+            "options": ["Once", "Daily", "Weekly", "Monthly"],
+            "default": "Daily"
+          },
+          {
+            "name": "frequencyInterval",
+            "label": "Every",
+            "type": "number",
+            "min": 1,
+            "default": 1,
+            "helperText": "Daily + 1 = every day, Daily + 2 = every 2 days, Weekly + 1 = every week, etc."
+          }
+        ],
+        "behavior": [
+          "If frequencyType === 'Once', frequencyInterval can be fixed to 1 and either hidden or disabled in the UI.",
+          "If frequencyType is Daily/Weekly/Monthly, allow the user to input a positive integer in frequencyInterval."
+        ]
+      },
+      "difficulty_and_xp": {
+        "description": "XP is predefined based on difficulty; user should NOT type XP manually.",
+        "fields": [
+          {
+            "name": "difficulty",
+            "label": "Difficulty",
+            "type": "select",
+            "options": [
+              "Easy Quest (100 XP)",
+              "Medium Quest (250 XP)",
+              "Hard Quest (500 XP)"
+            ]
+          }
+        ],
+        "mapping": {
+          "easy": 100,
+          "medium": 250,
+          "hard": 500
+        },
+        "rules": [
+          "Remove the free-text XP input field completely.",
+          "When saving a quest, compute `xp` from the selected difficulty using the mapping above."
+        ]
+      },
+      "modal_close_behavior": {
+        "description": "Modal must auto-close on successful save.",
+        "rules": [
+          "When the user clicks 'Save Quest', perform validation.",
+          "If Firestore write succeeds: close the modal and reset form state.",
+          "If Firestore write fails: keep the modal open and show an error message.",
+          "User should NOT need to click 'Cancel' to close after a successful save."
+        ]
+      }
+    },
+    "quest_log_layout": {
+      "description": "Visually split quests into three separate panels, not just one list with colored headings.",
+      "sections": [
+        "Reserved Quests",
+        "Available Quests",
+        "Completed Quests (recent)"
+      ],
+      "rules": [
+        "Render three distinct boxes/containers on the Quest Log page.",
+        "Each section must have its own title bar and body.",
+        "Quests must appear in only one of these three sections at any time on the Quest Log."
+      ]
+    }
+  },
+  "behavior_requirements": {
+    "recurrence_logic": {
+      "overview": "Quests are templates that repeat according to frequencyType + frequencyInterval. Recurring quests never disappear permanently; only one-time quests do.",
+      "on_create": [
+        "When a quest is created, set `isActive = true`.",
+        "Set `nextDueAt` to the current time (or the start of the current day) so that it appears immediately in Available Quests."
+      ],
+      "on_complete": {
+        "steps": [
+          "When the user clicks COMPLETE on a quest that is currently due:",
+          "1. Create a QuestHistoryEntry in `quest_history` with questId, questTitle, completedBy, reservedBy (if any), completedAt, xpAwarded, focusDurationSeconds (if available).",
+          "2. Clear reservation: set `reservedById = null` and `reservedByName = null` on the quest.",
+          "3. If frequencyType === 'once': set `isActive = false` so it never appears again in Available/Reserved; it will only be visible via History.",
+          "4. If frequencyType is 'daily' | 'weekly' | 'monthly': compute `nextDueAt` by adding `frequencyInterval` * (1 day / 1 week / 1 month) to the current time or to the start of the current period.",
+          "5. Do NOT delete the quest document."
+        ]
+      },
+      "availability_rules": {
+        "reserved_quests": [
+          "Quests where:",
+          "  isActive === true",
+          "  reservedById != null",
+          "  current time >= nextDueAt"
+        ],
+        "available_quests": [
+          "Quests where:",
+          "  isActive === true",
+          "  reservedById == null",
+          "  current time >= nextDueAt"
+        ],
+        "completed_quests_recent": [
+          "Do NOT derive this from Quest documents.",
+          "Read from `quest_history`, e.g., last N completions or completions in the last X days.",
+          "This is what populates the 'Completed Quests' section on the Quest Log."
+        ]
+      }
+    },
+    "buttons_and_status": {
+      "quest_card_buttons": [
+        "Each quest card should have buttons: RELEASE (if reserved), COMPLETE, FOCUS.",
+        "RESERVE logic may already exist; ensure Reserved/Release/Complete/Focus semantics stay consistent."
+      ],
+      "reserve_behavior": [
+        "When the user clicks RESERVE on an available quest:",
+        "  - Set reservedById and reservedByName to the current user.",
+        "  - Only allow reserving if isActive === true and current time >= nextDueAt.",
+        "  - The quest should move from 'Available Quests' to 'Reserved Quests'."
+      ],
+      "release_behavior": [
+        "When the user clicks RELEASE on a reserved quest:",
+        "  - Clear reservedById and reservedByName.",
+        "  - The quest moves back from 'Reserved Quests' to 'Available Quests'."
+      ],
+      "focus_behavior": [
+        "When the user clicks FOCUS on a quest:",
+        "  - Navigate to the Focus Mode page with the questId (or full quest object) passed along via router state or context.",
+        "  - Focus Mode can optionally record a focusDurationSeconds value when the session ends.",
+        "  - Do NOT auto-complete the quest from Focus Mode; completion still happens via the COMPLETE button in Quest Log or in an explicit Complete action on the Focus page."
+      ]
+    }
+  },
+  "grouping_logic_for_quest_log": {
+    "Reserved Quests": "All quests matching reserved_quests rules.",
+    "Available Quests": "All quests matching available_quests rules.",
+    "Completed Quests (recent)": "Recent completion entries pulled from quest_history.",
+    "display_metadata": [
+      "For each quest card, show: title, difficulty, XP, frequencyType + frequencyInterval (e.g. 'Daily · every 2 days'), Created by {createdByName}, Reserved by {reservedByName} if present.",
+      "For completed entries in the Completed section, show: questTitle, completedByName, completedAt, xpAwarded, and optionally focusDurationSeconds."
+    ]
+  },
+  "acceptance_criteria": [
+    "Create Quest modal shows Frequency as (type select + interval number), not a single dropdown.",
+    "XP input field is removed; XP is derived automatically from the selected difficulty.",
+    "Clicking 'Save Quest' successfully saves and automatically closes the modal without requiring Cancel.",
+    "Quest Log visually shows three clearly separated panels: Reserved Quests, Available Quests, Completed Quests.",
+    "Completing a recurring quest logs a history entry, hides the quest until its nextDueAt, and then it reappears under Available when due again.",
+    "Completing a one-time quest logs a history entry and removes it permanently from Reserved/Available (but it stays in History).",
+    "Reserved quests appear only in the Reserved panel; available quests only in Available; completed entries are rendered from quest_history in the Completed panel."
+  ]
+}

@@ -1,0 +1,124 @@
+This is an excellent and very detailed bug report! You've correctly identified all the major friction points in the app. The 30-second loading time and the Firebase errors are the most critical issues, and they are definitely related.
+
+I will generate a single, comprehensive prompt for your coding assistant (Cursor) to fix all of these problems in one go. This prompt is structured to be Cursor-friendly, explaining the why (the rationale) and the what (the code actions) for each problem.
+
+---
+
+### Cursor-Friendly Prompt Meowtivator v1.1 Refactor
+
+Goal Refactor the `Meowtivator` React app to fix critical performance issues, repair broken UI components, and implement key usability improvements based on user feedback.
+
+---
+
+### Problem 1 Critical - 30s Load Times & Firebase Errors (client is offline)
+
+Rationale
+The app is experiencing a race condition. It tries to query Firestore (`getDoc`, `onSnapshot`) before the Firebase `onAuthStateChanged` listener has confirmed a stable, authenticated user. When a user signs in with Google, the app fires a query before the new auth token is ready, causing Firestore's security rules to reject the request as unauthenticated. The 30-second delay is the network request timing out.
+
+Action Plan (Priority 1)
+1.  Implement Auth-First Data Fetching
+     Inside the main `App` component, find the `useEffect` hook that contains `onAuthStateChanged`.
+     Introduce a new state, `isAuthReady` (default `false`).
+     Only set `isAuthReady(true)` inside the `onAuthStateChanged` callback (both for `user` and `null` cases).
+2.  Guard All Firestore Queries
+     Locate the `useEffect` hook that fetches the `users` and `chores` collections.
+     Add `isAuthReady` as a dependency to this hook.
+     Add a guard clause at the very top `if (!isAuthReady  !userId) return;`.
+     This ensures no database calls happen until Firebase confirms the user is authenticated, fixing all client is offline errors.
+3.  Optimize Initial Load
+     Change the `chores` `onSnapshot` query. Instead of fetching all chores, only fetch activedue ones.
+         Replace `query(collection(db, choresPath))`
+         With `query(collection(db, choresPath), where(status, in, [active, reserved, completed]))` (and add index if prompted).
+     This will significantly reduce the initial data payload, speeding up the load time after auth.
+
+---
+
+### Problem 2 UIUX - Dashboard & Quest Log Confusion
+
+Rationale
+The user is confused by the page layout. The Dashboard feels empty, and the Quest Log is doing all the work. The Dashboard should be the main overview, and the Quest Log should be the task-management hub.
+
+Action Plan
+1.  Refactor `DashboardHeader`
+     The main navigation bar should be simplified. The links should be
+        1.  `DASHBOARD` (The stats page)
+        2.  `QUEST LOG` (The task list page)
+        3.  `COMMUNITY` (The new name for `REWARD_HALL`)
+        4.  `HISTORY`
+        5.  `PROFILE` (Accessed via a new user avatar icon, not a text button)
+        6.  `EXIT`
+2.  Refactor `Dashboard` Page (`PAGE_DASHBOARD`)
+     This page should contain the `XPDisplay` (Stats), `FairnessMeter`, and the `LeaderboardPanel`.
+     New Feature Add a new, small panel to the Dashboard called My Reserved Quests that only shows chores where `reserved_by_id == currentUserId`. This gives the user a quick action list.
+3.  Refactor `ChoreListPanel` (The Quest Log Page)
+     This component should not be on the Dashboard. It is the `PAGE_QUEST_LOG`.
+     Modify the `renderPage` function to show `ChoreListPanel` only when `currentPage === PAGE_QUEST_LOG`.
+
+---
+
+### Problem 3 Feature - Quest Detail & History
+
+Rationale
+Users want to see the completion history for a specific quest, not just the global history log.
+
+Action Plan
+1.  Create New Page State Add `PAGE_QUEST_DETAIL = 'QUEST_DETAIL'` to the UI constants.
+2.  Update `ChoreListPanel`
+     Make the entire chore item `div` clickable.
+     On click, set `setCurrentPage(PAGE_QUEST_DETAIL)` and also set a new state `selectedChoreId`.
+3.  Create `QuestDetailPage` Component
+     Render this component when `currentPage === PAGE_QUEST_DETAIL`.
+     It should receive `choreId={selectedChoreId}`.
+     Inside this component's `useEffect`, run a new Firestore query to fetch all documents from the `historyChores` collection (or `chores` where `status == 'archived'`) `where(originalChoreId, ==, choreId)`.
+     Display the chore's details (Name, XP, Frequency) and a list of its completion history (Completed by [User] on [Date]).
+
+---
+
+### Problem 4 UIUX - Profile Page & User ID
+
+Rationale
+The long, unchangeable Firebase `userId` is confusing. Users want a human-readable, customizable ID and a way to add friends. The avatars are also broken.
+
+Action Plan
+1.  Refactor Profile Page (`PAGE_PROFILE`)
+     Change Player ID Label Change the label for the long string from Player ID to My Unique ID (for support).
+     Add Display Name Add a new text input and Save button to allow users to set their `displayName` in Firestore.
+     Fix Avatars
+         At the top of the file, delete any existing `AVATAR_OPTIONS` array.
+         Paste in the correct `AVATAR_OPTIONS` array (the one with 6 SVGs cat, dog, robot, etc.).
+         Ensure the `ProfilePage` component's `grid` maps over this `AVATAR_OPTIONS` array.
+2.  Friend System (DEFERRED)
+     We will not implement a friend-finding system in this iteration. The app's logic is designed for all users to share one data pool (one home). We will add a Set Display Name feature instead, which solves the ID problem.
+
+---
+
+### Problem 5 UIUX - Reward Hall Renaming
+
+Rationale
+The user wants this page to be the Community hub and act as a central log.
+
+Action Plan
+1.  Rename Page
+     Change `PAGE_REWARDS = 'REWARD_HALL'` to `PAGE_COMMUNITY = 'COMMUNITY'`.
+     Update all navigation buttons (`setCurrentPage`) to use `PAGE_COMMUNITY`.
+     Change the `RewardHall` component name and its title `h3` to `CommunityPage`.
+2.  Clarify Content
+     The `CommunityPage` will contain The Leaderboards, the Monthly Prize editor, and the Fairness Threshold settings.
+     The log of everything everyone has done is the existing `PAGE_HISTORY`. This is just a navigation clarification.
+
+---
+
+### Problem 6 Feature - Focus Mode Spotify & UI
+
+Rationale
+The Spotify embed is static and not useful. The timer UI is misaligned.
+
+Action Plan
+1.  Fix Spotify (Compromise)
+     Add a new state `spotifyUrl` (default the Chill Hits URL).
+     Add a new text `input` and Set Playlist `button` above the `iframe` in the `FocusPage` component.
+     When the user pastes a URL and clicks Set, update the `spotifyUrl` state.
+     Change the `iframe`'s `src` attribute to be dynamic `src={spotifyUrl}`. This gives the user control without complex OAuth.
+2.  Fix Timer UI
+     In the `FocusPage` component, find the `div` displaying the timer text (`formatTime(elapsedTime)`).
+     Ensure it has the following Tailwind classes for centering and size `text-9xl font-extrabold text-white my-8 pixel-shadow flex items-center justify-center`. Adjust `text-9xl` as needed.

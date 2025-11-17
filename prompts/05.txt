@@ -1,0 +1,129 @@
+{
+  "task": "Fix Quest Log page and implement correct recurring-chore logic in Meowtivator app",
+  "context": {
+    "tech": ["React", "Firebase Firestore"],
+    "pages_involved": ["Quest Log", "Focus Mode", "History"],
+    "goal": "Implement proper chore recurrence, reservation, completion, history logging, and fix modal behavior."
+  },
+  "requirements": {
+    "1_modal_fix": {
+      "bug": "Quest creation/edit modal does not close after clicking Save.",
+      "solution": [
+        "After a successful Firestore write, automatically close the modal.",
+        "Reset form state after saving."
+      ]
+    },
+
+    "2_firestore_model_update": {
+      "quest_structure": {
+        "id": "string",
+        "title": "string",
+        "difficulty": "'easy' | 'medium' | 'hard'",
+        "xp": "number",
+        "frequency": "'once' | 'daily' | 'weekly' | 'monthly'",
+        "createdById": "string",
+        "createdByName": "string",
+        "reservedById": "string | null",
+        "reservedByName": "string | null",
+        "lastCompletedAt": "Timestamp | null",
+        "lastFocusDurationSeconds": "number | null"
+      },
+      "notes": [
+        "Do NOT store a permanent 'status' field.",
+        "Status must be calculated dynamically based on recurrence."
+      ]
+    },
+
+    "3_recurrence_logic": {
+      "purpose": "Quests should NOT be permanently completed, except one-time tasks.",
+      "rules": {
+        "once": "Hide forever after first completion. Only visible in History.",
+        "daily": "Becomes active again when currentDate > lastCompletedAt (different day).",
+        "weekly": "Becomes active again when currentWeekNumber > week(lastCompletedAt).",
+        "monthly": "Becomes active again when currentMonth > month(lastCompletedAt)."
+      }
+    },
+
+    "4_dynamic_status_logic": {
+      "no_status_field": true,
+      "available_if": [
+        "Quest has no reservedById",
+        "Quest is due again per recurrence rules"
+      ],
+      "reserved_if": [
+        "reservedById is set",
+        "Quest is currently due"
+      ],
+      "hidden_if": [
+        "frequency = 'once'",
+        "lastCompletedAt != null"
+      ]
+    },
+
+    "5_quest_buttons": {
+      "required_buttons": ["RESERVE", "COMPLETE", "FOCUS"],
+      "reserve_behavior": [
+        "Sets reservedById and reservedByName",
+        "Only allowed when quest is due"
+      ],
+      "complete_behavior": [
+        "Create a history entry",
+        "Clear reservedById and reservedByName",
+        "Set lastCompletedAt = serverTimestamp()",
+        "Award XP",
+        "Do NOT delete quest",
+        "Recurring quests disappear until next recurrence"
+      ],
+      "focus_behavior": [
+        "Redirect to Focus Mode",
+        "Start timer and music (existing)",
+        "On exit, store lastFocusDurationSeconds (optional)"
+      ]
+    },
+
+    "6_history_logging": {
+      "history_structure": {
+        "id": "string",
+        "questId": "string",
+        "questTitle": "string",
+        "completedById": "string",
+        "completedByName": "string",
+        "completedAt": "Timestamp",
+        "xpAwarded": "number",
+        "reservedById": "string | null",
+        "reservedByName": "string | null",
+        "focusDurationSeconds": "number | null"
+      },
+      "placement": "Collection: quest_history"
+    },
+
+    "7_ui_grouping": {
+      "groups": {
+        "A_reserved": "Active + reserved quests",
+        "B_available": "Active + unreserved quests",
+        "C_finished_once_only": "One-time quests that were completed and never return"
+      },
+      "notes": [
+        "Daily/weekly/monthly quests should NOT appear in a permanent completed section.",
+        "They only appear again when they’re due."
+      ]
+    },
+
+    "8_visibility_rules": {
+      "completed_daily_weekly_monthly": "Temporarily hidden until next recurrence cycle",
+      "completed_once": "Hidden forever from Quest Log",
+      "history": "Always shows every action performed by every user"
+    }
+  },
+
+  "acceptance_criteria": [
+    "Modal closes automatically on Save.",
+    "Quest recurrence regenerates tasks properly.",
+    "Buttons RESERVE, COMPLETE, FOCUS work with Firestore.",
+    "History logs all completions.",
+    "Quest Log shows correct grouping.",
+    "UI displays createdBy, reservedBy, completedBy (last run).",
+    "Recurring quests never disappear permanently.",
+    "One-time quests disappear permanently after completion."
+  ]
+}

@@ -1,0 +1,214 @@
+Project: Meowtivator (Gamified Chore Manager)
+1. Project Goal
+Develop a real-time, multi-user web application to gamify household chores, featuring dynamic recurrence, reservation, a Focus Mode with a timer, and a custom fairness system based on a user-defined XP threshold. The aesthetic is a full Retro Pixel Quest theme (already applied to the main component).
+2. Tech Stack & Environment
+Frontend: React (functional components, Hooks, client-side routing).
+Backend & Database: Firebase/Firestore (used for environment compatibility and real-time data sync).
+Styling: Tailwind CSS (Pixel Art theme applied).
+Navigation: State-based routing between Dashboard, Focus Page, and History Page.
+3. Database Schema (Firestore Collections)
+A. Collection: users (Path: /artifacts/{appId}/public/data/users/{userId})
+Field
+Type
+Description
+id
+string (Document ID)
+Firestore user ID.
+display_name
+string
+The player's current character name (e.g., "Hero John").
+total_xp
+number
+Accumulated total experience points (XP).
+weekly_xp
+number
+XP earned in the current week.
+star_coins
+number
+Currency for rewards (100 coins per 1000 Total XP).
+currentWeek
+number
+Week number for weekly reset tracking.
+fairness_threshold
+number (Default: 1000)
+User-defined max acceptable XP difference.
+NEW: monthly_xp_start
+number
+Total XP recorded on the 1st of the current month for reward tracking.
+
+B. Collection: chores (Path: /artifacts/{appId}/public/data/chores/{choreId})
+Field
+Type
+Description
+id
+string (Document ID)
+Chore unique ID.
+name
+string
+Chore description.
+xp_value
+number
+The base XP awarded (100, 250, or 500).
+difficulty
+string
+'easy', 'medium', or 'hard'.
+status
+string
+'active', 'reserved', 'completed'.
+reserved_by_id
+string (Nullable)
+ID of the user who currently holds the reservation.
+frequency_unit
+string
+'days', 'weeks', 'months', or 'once'.
+frequency_interval
+number
+The numerical interval (e.g., '2' if unit is 'days').
+due_date
+timestamp
+The calculated time the chore is next due.
+last_completed_at
+timestamp
+When it was last completed.
+completed_by_id
+string
+ID of the user who last completed it.
+time_spent_ms
+number (Nullable)
+Time recorded in the Focus Session (milliseconds).
+
+4. Phase 1 Tasks: Core Functionality (COMPLETE)
+The following logic is implemented in ChoreManager.jsx:
+Authentication & Initialization
+XP Progression: total_xp, weekly_xp, star_coins calculation (100 coins per 1000 XP).
+Recurrence: Chore creation calculates initial due_date. handleCompleteChore calculates the next due_date. Client-side filtering resets "completed" tasks to "active" if due_date is passed.
+Fairness Meter: Calculates XP gap and applies a 1.5x XP Boost to the lowest earner if the gap exceeds the fairness_threshold.
+Task Flow: Reservation (status: reserved), Focus Page with working timer and music embed, and final completion.
+5. Phase 2: Next Steps (Remaining Tasks)
+The following three critical features need to be implemented to finalize the MVP:
+Task A: Fairness Threshold Settings
+Action: Create a modal or dedicated settings panel accessible from the main dashboard.
+Functionality: Allow the current authenticated user to view and update their personal fairness_threshold (stored in the users collection).
+UI: Use the retro pixel art styling for the input and save button.
+Task B: Chore History Page
+Action: Implement a new page/view (PAGE_HISTORY) and navigation button.
+Data Source: Fetch all chores that are not currently active or reserved (i.e., those permanently completed or fully cycled through).
+Display: List chores and display the recorded history details:
+Chore Name and XP
+Completed By (completed_by_id translated to display_name)
+Completion Date (last_completed_at)
+Time Spent (time_spent_ms formatted as H:MM:SS)
+Task C: Monthly Reward Tracker (Logic & Display)
+Action: Add logic to track monthly XP performance.
+Logic (Users Collection):
+On the 1st of every month, check if the current date differs from the date when the monthly_xp_start field was last updated.
+If it's a new month, update the user's monthly_xp_start to their current total_xp.
+If it's the current month, calculate Monthly XP Earned = current_total_xp - monthly_xp_start.
+Display: Show a new panel (perhaps integrated near the Leaderboard) listing all users' Monthly XP Earned to clearly indicate who is winning the monthly real-life reward.
+Project: Meowtivator (Gamified Chore Manager)
+1. Project Goal
+Develop a real-time, multi-user web application to gamify household chores, featuring dynamic recurrence, reservation, a Focus Mode with a timer, and a custom fairness system based on a user-defined XP threshold. The aesthetic is a full Retro Pixel Quest theme (already applied to the main component).
+2. Tech Stack & Environment
+Frontend: React (functional components, Hooks, client-side routing).
+Backend & Database: Firebase/Firestore (used for environment compatibility and real-time data sync).
+Styling: Tailwind CSS (Pixel Art theme applied).
+Navigation: State-based routing between Dashboard, Focus Page, and History Page.
+3. Database Schema (Firestore Collections)
+A. Collection: users (Path: /artifacts/{appId}/public/data/users/{userId})
+Field
+Type
+Description
+id
+string (Document ID)
+Firestore user ID.
+display_name
+string
+The player's current character name (e.g., "Hero John").
+total_xp
+number
+Accumulated total experience points (XP).
+weekly_xp
+number
+XP earned in the current week.
+star_coins
+number
+Currency for rewards (100 coins per 1000 Total XP).
+currentWeek
+number
+Week number for weekly reset tracking.
+fairness_threshold
+number (Default: 1000)
+User-defined max acceptable XP difference.
+NEW: monthly_xp_start
+number
+Total XP recorded on the 1st of the current month for reward tracking.
+
+B. Collection: chores (Path: /artifacts/{appId}/public/data/chores/{choreId})
+Field
+Type
+Description
+id
+string (Document ID)
+Chore unique ID.
+name
+string
+Chore description.
+xp_value
+number
+The base XP awarded (100, 250, or 500).
+difficulty
+string
+'easy', 'medium', or 'hard'.
+status
+string
+'active', 'reserved', 'completed'.
+reserved_by_id
+string (Nullable)
+ID of the user who currently holds the reservation.
+frequency_unit
+string
+'days', 'weeks', 'months', or 'once'.
+frequency_interval
+number
+The numerical interval (e.g., '2' if unit is 'days').
+due_date
+timestamp
+The calculated time the chore is next due.
+last_completed_at
+timestamp
+When it was last completed.
+completed_by_id
+string
+ID of the user who last completed it.
+time_spent_ms
+number (Nullable)
+Time recorded in the Focus Session (milliseconds).
+
+4. Phase 1 Tasks: Core Functionality (COMPLETE)
+The following logic is implemented in ChoreManager.jsx:
+Authentication & Initialization
+XP Progression: total_xp, weekly_xp, star_coins calculation (100 coins per 1000 XP).
+Recurrence: Chore creation calculates initial due_date. handleCompleteChore calculates the next due_date. Client-side filtering resets "completed" tasks to "active" if due_date is passed.
+Fairness Meter: Calculates XP gap and applies a 1.5x XP Boost to the lowest earner if the gap exceeds the fairness_threshold.
+Task Flow: Reservation (status: reserved), Focus Page with working timer and music embed, and final completion.
+5. Phase 2: Next Steps (Remaining Tasks)
+The following three critical features need to be implemented to finalize the MVP:
+Task A: Fairness Threshold Settings
+Action: Create a modal or dedicated settings panel accessible from the main dashboard.
+Functionality: Allow the current authenticated user to view and update their personal fairness_threshold (stored in the users collection).
+UI: Use the retro pixel art styling for the input and save button.
+Task B: Chore History Page
+Action: Implement a new page/view (PAGE_HISTORY) and navigation button.
+Data Source: Fetch all chores that are not currently active or reserved (i.e., those permanently completed or fully cycled through).
+Display: List chores and display the recorded history details:
+Chore Name and XP
+Completed By (completed_by_id translated to display_name)
+Completion Date (last_completed_at)
+Time Spent (time_spent_ms formatted as H:MM:SS)
+Task C: Monthly Reward Tracker (Logic & Display)
+Action: Add logic to track monthly XP performance.
+Logic (Users Collection):
+On the 1st of every month, check if the current date differs from the date when the monthly_xp_start field was last updated.
+If it's a new month, update the user's monthly_xp_start to their current total_xp.
+If it's the current month, calculate Monthly XP Earned = current_total_xp - monthly_xp_start.
+Display: Show a new panel (perhaps integrated near the Leaderboard) listing all users' Monthly XP Earned to clearly indicate who is winning the monthly real-life reward.

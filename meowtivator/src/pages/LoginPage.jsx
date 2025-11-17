@@ -8,7 +8,6 @@ import {
 } from 'firebase/auth';
 import { auth, appId as firebaseAppId, db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const LoginPage = () => {
@@ -19,18 +18,11 @@ const LoginPage = () => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('meow-stay-signed-in') === 'true';
   });
-  const navigate = useNavigate();
   const provider = new GoogleAuthProvider();
-
-  useEffect(() => {
-    if (!loading && currentUser) {
-      navigate(`/users/${currentUser.uid}/dashboard`, { replace: true });
-    }
-  }, [loading, currentUser, navigate]);
 
   const ensureUserDocument = async (user) => {
     if (!firebaseAppId) return;
-    const userRef = doc(db, `artifacts/${firebaseAppId}/public/data/users`, user.uid);
+    const userRef = doc(db, 'artifacts', firebaseAppId, 'public', 'data', 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
@@ -61,7 +53,6 @@ const LoginPage = () => {
       await setPersistence(auth, persistence);
       const result = await signInWithPopup(auth, provider);
       await ensureUserDocument(result.user);
-      navigate(`/users/${result.user.uid}/dashboard`, { replace: true });
     } catch (err) {
       console.error('Sign-in error:', err);
       setError(err.message || 'Failed to sign in. Please try again.');
