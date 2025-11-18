@@ -21,6 +21,70 @@ Before running the app, you need to set up your environment variables:
 
 **Important:** Never commit your `.env` file to git. It's already in `.gitignore`.
 
+## Docker Deployment
+
+The application can be easily containerized using Docker for consistent deployment across different environments.
+
+### Prerequisites
+
+- Docker installed on your system
+- Docker Compose (optional, for easier management)
+
+### Quick Start with Docker Compose
+
+1. **Build and run the application:**
+   ```bash
+   docker-compose up --build
+   ```
+
+2. **Access the application:**
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+3. **Stop the application:**
+   ```bash
+   docker-compose down
+   ```
+
+### Manual Docker Build
+
+If you prefer to use Docker directly:
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t meowtivator .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -p 3000:80 meowtivator
+   ```
+
+3. **Access the application:**
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Environment Variables in Docker
+
+For production deployments, you can pass environment variables to the container:
+
+```bash
+docker run -p 3000:80 \
+  -e REACT_APP_FIREBASE_API_KEY=your_api_key \
+  -e REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain \
+  meowtivator
+```
+
+**Note:** Environment variables must be prefixed with `REACT_APP_` to be accessible in the React application.
+
+### Development with Docker
+
+For development with hot reloading:
+
+```bash
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+This will start the development server with live reloading when you make changes to the source code.
+
 ## Getting Started
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

@@ -1,5 +1,5 @@
 import React from 'react';
-import ChoreManager from './components/ChoreManager';
+import QuestManager from './components/QuestManager';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { appId } from './firebase';
@@ -20,7 +20,7 @@ const AppContent = () => {
     return <LoginPage />;
   }
 
-  return <ChoreManager appId={appId} />;
+  return <QuestManager appId={appId} />;
 };
 
 function App() {

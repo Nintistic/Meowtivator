@@ -30,8 +30,8 @@ const PAGES = {
 
 const difficultyPresets = {
   easy: { label: 'Easy Quest (100 XP)', xp: 100 },
-  medium: { label: 'Heroic Quest (250 XP)', xp: 250 },
-  hard: { label: 'Legendary Quest (500 XP)', xp: 500 },
+  medium: { label: 'Medium Quest (250 XP)', xp: 250 },
+  hard: { label: 'Hard Quest (500 XP)', xp: 500 },
 };
 
 const initialTaskForm = {
@@ -244,7 +244,7 @@ const AVATAR_OPTIONS = [
     id: 'ghost',
     label: 'Procrastination Ghost',
     emoji: '👻',
-    data: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHJlY3QgeD0iMyIgeT0iNCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjgiIGZpbGw9IiMwMEZGMkYiLz48cmVjdCB4PSI1IiB5PSI2IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSJibGFjayIvPjxyZWN0IHg9IjkiIHk9IjYiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9ImJsYWNrIi8+PHJlY3QgeD0iMiIgeT0iMTIiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiMwMEZGMkYiLz48cmVjdCB4PSI0IiB5PSIxMiIgd2lkdGg9IjMiIGhlaWdodD0iMiIgZmlsbD0iI0ZGMDAwMCIvPjxyZWN0IHg9IjciIHk9IjEyIiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjRkYwMDAwIi8+PHJlY3QgeD0iOSIgeT0iMTIiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiMwMEZGMkYiLz48cmVjdCB4PSIxMSIgeT0iMTIiIHdpZ2h0PSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiNGRjAwMDAiLz48L3N2Zz4=',
+    data: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHJlY3QgeD0iMyIgeT0iNCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjgiIGZpbGw9IiMwMEZGMkYiLz48cmVjdCB4PSI1IiB5PSI2IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSJibGFjayIvPjxyZWN0IHg9IjkiIHk9IjYiIHdpZWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSJibGFjayIvPjxyZWN0IHg9IjIiIHk9IjEyIiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjMEVG RjJGIi8+PHJlY3QgeD0iNCIgeT0iMTIiIHdpZHRoPSIzIiBoZWlnaHQ9IjIiIGZpbGw9IiNG RjAwMDAiLz48cmVjdCB4PSI3IiB5PSIxMiIgd2lkdGg9IjIiIGhlaWdodD0iMiIgZmlsbD0iI0ZGMDAwMCIvPjxyZWN0IHg9IjkiIHk9IjEyIiB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjMEVGRjJGIi8+PHJlY3QgeD0iMSIgeT0iMTIiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiNGRjAwMDAiLz48L3N2Zz4=',
   },
   {
     id: 'wizard',
@@ -254,7 +254,7 @@ const AVATAR_OPTIONS = [
   },
 ];
 
-const ChoreManager = ({ appId = 'default-app' }) => {
+const QuestManager = ({ appId = 'default-app' }) => {
   const { currentUser } = useAuth();
   const [activePage, setActivePage] = useState(PAGES.DASHBOARD);
   const [users, setUsers] = useState([]);
@@ -715,15 +715,6 @@ const ChoreManager = ({ appId = 'default-app' }) => {
   const handleCreateQuest = async () => {
     if (!newQuestForm.title.trim()) return;
     try {
-      const now = new Date();
-      const nextDueAt = calculateNextDueAt(
-        newQuestForm.frequencyType,
-        newQuestForm.frequencyInterval,
-        now
-      );
-      // For new quests, set nextDueAt to now (or start of day) so they appear immediately
-      const initialNextDueAt = startOfDay(now);
-      
       await addDoc(collection(db, ...choreCollectionPath), {
         title: newQuestForm.title.trim(),
         difficulty: newQuestForm.difficulty,
@@ -731,7 +722,7 @@ const ChoreManager = ({ appId = 'default-app' }) => {
         frequencyType: newQuestForm.frequencyType,
         frequencyInterval: newQuestForm.frequencyInterval,
         isActive: true,
-        nextDueAt: serverTimestamp(), // Will be set to now on creation
+        nextDueAt: serverTimestamp(), // Set to now so quest appears immediately
         createdById: currentUser.uid,
         createdByName:
           currentUserDoc?.display_name ||
@@ -1885,10 +1876,10 @@ const ProfilePage = ({ user, saving, onBack, onUpdateAvatar, onGoToRewards }) =>
           <div className="border-4 border-[#49297E] bg-[#12091f] min-h-[calc(100vh-80px)]">
             <header className="border-b-4 border-[#251744] p-6 flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
               <div>
-                <p className="text-[#FDE48A] text-lg tracking-[0.2em]">
+                <p className="text-[#FDE48A] text-lg tracking-[0.3em]">
                   MEOWTIVATOR: QUEST LOG
                 </p>
-                <p className="text-[#90DCFF] text-xs mt-2">&gt; PROFILE & AVATAR</p>
+                <p className="text-[#90DCFF] text-xs mt-2">&gt; PROFILE &amp; AVATAR</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -2059,5 +2050,4 @@ const ProfilePage = ({ user, saving, onBack, onUpdateAvatar, onGoToRewards }) =>
   );
 };
 
-export default ChoreManager;
-
+export default QuestManager;

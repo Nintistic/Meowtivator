@@ -9,20 +9,14 @@ jest.mock('./firebase', () => {
   };
 });
 
-let authCallback = null;
 jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => ({})),
   onAuthStateChanged: jest.fn((auth, callback) => {
-    authCallback = callback;
     // Call callback in next tick to allow React to mount
     Promise.resolve().then(() => {
-      if (authCallback) {
-        act(() => {
-          authCallback(null);
-        });
-      }
+      callback(null);
     });
-    return jest.fn();
+    return () => {}; // Return a function for unsubscribe
   }),
 }));
 
