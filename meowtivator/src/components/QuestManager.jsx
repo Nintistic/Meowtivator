@@ -526,9 +526,11 @@ const QuestManager = ({ appId = 'default-app' }) => {
           monthly_reward_title: '',
         });
       }
+      // Set loading to false after ensuring user document exists
+      setUsersLoading(false);
     };
     ensureUserDocument();
-  }, [currentUser, appId]);
+  }, [currentUser, appId, userCollectionPath]);
 
   useEffect(() => {
     if (!appId) return;
@@ -542,7 +544,7 @@ const QuestManager = ({ appId = 'default-app' }) => {
       setUsersLoading(false);
     });
     return () => unsubscribe();
-  }, [appId]);
+  }, [appId, userCollectionPath]);
 
   useEffect(() => {
     if (!appId) return;
@@ -714,6 +716,9 @@ const QuestManager = ({ appId = 'default-app' }) => {
 
   const handleCreateQuest = async () => {
     if (!newQuestForm.title.trim()) return;
+    
+    console.log('handleCreateQuest called, creating quest...');
+    
     try {
       await addDoc(collection(db, ...choreCollectionPath), {
         title: newQuestForm.title.trim(),
@@ -737,10 +742,14 @@ const QuestManager = ({ appId = 'default-app' }) => {
         lastCompletedByName: null,
         createdAt: serverTimestamp(),
       });
-      setNewQuestForm(initialTaskForm);
-      setNewQuestModal(false);
+      console.log('Quest created successfully');
     } catch (error) {
       console.error('Error creating quest', error);
+    } finally {
+      console.log('Closing modal and resetting form...');
+      setNewQuestForm(initialTaskForm);
+      setNewQuestModal(false);
+      console.log('Modal should be closed now');
     }
   };
 
@@ -964,10 +973,10 @@ const QuestManager = ({ appId = 'default-app' }) => {
     }
   };
 
-  if (!currentUser || usersLoading) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-400 to-purple-600 flex items-center justify-center text-white font-pixel">
-        Preparing your quest log...
+        Loading...
       </div>
     );
   }
@@ -994,17 +1003,7 @@ const QuestManager = ({ appId = 'default-app' }) => {
     friendCodeShort: generateFriendCode(player.friend_code || player.id),
   };
 
-  if (activePage === PAGES.PROFILE) {
-    return (
-      <ProfilePage
-        user={profileUser}
-        saving={savingProfile}
-        onBack={() => setActivePage(PAGES.DASHBOARD)}
-        onUpdateAvatar={handleAvatarSave}
-        onGoToRewards={() => setActivePage(PAGES.REWARD_HALL)}
-      />
-    );
-  }
+  // Profile page is now rendered inline with the main layout, not as a separate component
 
   const gradientBackground = {
     background: 'linear-gradient(135deg, #34216d 0%, #5176fd 45%, #2fb1a8 100%)',
@@ -1595,6 +1594,113 @@ const QuestManager = ({ appId = 'default-app' }) => {
     </section>
   );
 
+  const renderProfile = () => {
+    return (
+      <div className="space-y-6">
+        <section className={panelClass}>
+          <div>
+            <p className="text-[#FDFB76] text-sm uppercase tracking-[0.2em]">Player Stats</p>
+            <p className="text-[#90DCFF] text-[10px] mt-1">Your current quest résumé</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className={statCardClass}>
+              <div className="h-2 mb-3 rounded-full bg-gradient-to-r from-[#00DB96] via-[#90DCFF] to-[#FDFB76]" />
+              <p className="text-[#90DCFF] text-[10px] tracking-[0.2em]">TOTAL XP</p>
+              <p className="text-[#FDFB76] text-2xl mt-2">{profileUser.totalXp.toLocaleString()}</p>
+              <p className="text-gray-300 text-[9px] mt-1">Lifetime quests</p>
+            </div>
+            <div className={statCardClass}>
+              <div className="h-2 mb-3 rounded-full bg-gradient-to-r from-[#FDE48A] to-[#E10086]" />
+              <p className="text-[#90DCFF] text-[10px] tracking-[0.2em]">WEEKLY XP</p>
+              <p className="text-[#FDFB76] text-2xl mt-2">{profileUser.weeklyXp.toLocaleString()}</p>
+              <p className="text-gray-300 text-[9px] mt-1">This week&apos;s grind</p>
+            </div>
+            <div className={statCardClass}>
+              <div className="h-2 mb-3 rounded-full bg-gradient-to-r from-[#00DB96] to-[#2fb1a8]" />
+              <p className="text-[#90DCFF] text-[10px] tracking-[0.2em]">STAR COINS</p>
+              <p className="text-[#FDFB76] text-2xl mt-2">{profileUser.starCoins.toLocaleString()}</p>
+              <p className="text-gray-300 text-[9px] mt-1">Reward Hall currency</p>
+            </div>
+          </div>
+          <div className="bg-[#0b0717] border-[3px] border-[#00DB96] p-4 space-y-3">
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="text-[#FDFB76] text-[10px] uppercase tracking-widest">
+                Friend Code
+              </div>
+              <div className="text-[12px] bg-black border-2 border-[#90DCFF] px-3 py-1 text-[#90DCFF]">
+                {profileUser.friendCodeShort}
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(profileUser.friendCodeShort);
+                  } catch (err) {
+                    console.error('Failed to copy:', err);
+                  }
+                }}
+                className="border-[3px] border-black bg-[#00DB96] text-black px-3 py-1 text-[10px] shadow-[2px_2px_0_#000]"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className={panelClass}>
+          <div>
+            <p className="text-[#FDFB76] text-sm uppercase tracking-[0.2em]">Avatar Selection</p>
+            <p className="text-[#90DCFF] text-[10px] mt-1">Pick your pixel alter ego</p>
+          </div>
+          <div className="flex items-center gap-4 mb-4">
+            <img
+              src={profileUser.avatarUrl}
+              alt="Current avatar"
+              className="w-24 h-24 border-4 border-black bg-black"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {AVATAR_OPTIONS.map((avatar) => {
+              const isSelected = profileUser.avatarUrl === avatar.data;
+              return (
+                <button
+                  key={avatar.id}
+                  onClick={() => handleAvatarSave(avatar.data)}
+                  disabled={savingProfile}
+                  className={`relative px-4 py-5 text-left border-[3px] border-black shadow-[0_4px_0_#000] transition-transform ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-[#49297E] to-[#12091f] border-[#00DB96]'
+                      : 'bg-[#1a1030] hover:-translate-y-1'
+                  } ${savingProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isSelected && (
+                    <span className="absolute -top-3 right-2 text-[8px] bg-[#00DB96] text-black px-2 border-2 border-black">
+                      Equipped
+                    </span>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 border-2 border-black bg-black flex items-center justify-center"
+                      style={{ imageRendering: 'pixelated' }}
+                    >
+                      <span className="text-2xl">{avatar.emoji}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#FDFB76]">{avatar.label}</p>
+                      <p className="text-[9px] text-[#90DCFF] mt-1">
+                        Pixel alter ego
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    );
+  };
+
   const renderPage = () => {
     switch (activePage) {
       case PAGES.DASHBOARD:
@@ -1607,6 +1713,8 @@ const QuestManager = ({ appId = 'default-app' }) => {
         return renderRewardHall();
       case PAGES.HISTORY:
         return renderHistory();
+      case PAGES.PROFILE:
+        return renderProfile();
       default:
         return null;
     }
@@ -1793,259 +1901,6 @@ const QuestManager = ({ appId = 'default-app' }) => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-const ProfilePage = ({ user, saving, onBack, onUpdateAvatar, onGoToRewards }) => {
-  const [selectedAvatar, setSelectedAvatar] = useState(user?.avatarUrl || AVATAR_OPTIONS[0].data);
-  const [copyStatus, setCopyStatus] = useState('');
-  const [friendInput, setFriendInput] = useState('');
-
-  useEffect(() => {
-    setSelectedAvatar(user?.avatarUrl || AVATAR_OPTIONS[0].data);
-  }, [user?.avatarUrl]);
-
-  useEffect(() => {
-    if (document.getElementById('press-start-font')) return;
-    const link = document.createElement('link');
-    link.id = 'press-start-font';
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
-    document.head.appendChild(link);
-  }, []);
-
-  const fontFamily = { fontFamily: '"Press Start 2P", monospace' };
-
-  const handleCopyFriendCode = async () => {
-    try {
-      await navigator.clipboard.writeText(user.friendCodeShort);
-      setCopyStatus('Copied!');
-    } catch {
-      setCopyStatus('Error');
-    }
-    setTimeout(() => setCopyStatus(''), 2000);
-  };
-
-  const handleAddFriend = () => {
-    if (!friendInput.trim()) {
-      setCopyStatus('Enter a code');
-      setTimeout(() => setCopyStatus(''), 2000);
-      return;
-    }
-    alert(`Friend request sent to: ${friendInput.trim().toUpperCase()}`);
-    setFriendInput('');
-  };
-
-  const gradientBackground = {
-    background: 'linear-gradient(135deg, #34216d 0%, #5176fd 45%, #2fb1a8 100%)',
-  };
-
-  const vignette = {
-    background:
-      'radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 100%)',
-  };
-
-  const pixelGrid = {
-    backgroundImage:
-      'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-    backgroundSize: '4px 4px',
-  };
-
-  const scanLines = {
-    backgroundImage: 'linear-gradient(rgba(0,0,0,0.25) 1px, transparent 1px)',
-    backgroundSize: '100% 6px',
-  };
-
-  const statStrip = (colors = []) => ({
-    backgroundImage: `linear-gradient(90deg, ${colors.join(', ')})`,
-  });
-
-  return (
-    <div
-      style={fontFamily}
-      className="relative min-h-screen py-2 px-1 flex items-center justify-center overflow-hidden"
-    >
-      <div className="absolute inset-0" style={gradientBackground} />
-      <div className="absolute inset-0 opacity-70" style={pixelGrid} />
-      <div className="absolute inset-0 opacity-60" style={scanLines} />
-      <div className="absolute inset-0" style={vignette} />
-
-      <div className="relative w-full max-w-[95%]">
-        <div className="border-4 border-black shadow-[0_20px_0_#000000]">
-          <div className="border-4 border-[#49297E] bg-[#12091f] min-h-[calc(100vh-80px)]">
-            <header className="border-b-4 border-[#251744] p-6 flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
-              <div>
-                <p className="text-[#FDE48A] text-lg tracking-[0.3em]">
-                  MEOWTIVATOR: QUEST LOG
-                </p>
-                <p className="text-[#90DCFF] text-xs mt-2">&gt; PROFILE &amp; AVATAR</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={onBack}
-                  className="border-4 border-[#00DB96] text-[#00DB96] px-4 py-2 text-xs bg-transparent hover:bg-[#00DB96]/10 transition"
-                >
-                  ← Dashboard
-                </button>
-                <button
-                  onClick={onGoToRewards}
-                  className="border-4 border-[#E10086] bg-[#E10086] text-white px-4 py-2 text-xs shadow-[4px_4px_0_#000]"
-                >
-                  Reward Hall
-                </button>
-              </div>
-            </header>
-
-            <div className="p-6 grid gap-6 lg:grid-cols-2">
-              <section className="bg-gradient-to-br from-[#1c1133] to-[#251744] border-[3px] border-[#49297E] shadow-[0_0_0_3px_#000,0_8px_0_#000] p-5 space-y-4">
-                <div>
-                  <p className="text-[#FDFB76] text-sm uppercase">Player Stats</p>
-                  <p className="text-[#90DCFF] text-[10px] mt-1">Your current quest résumé.</p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="bg-[#190f33] border-2 border-black text-center px-3 py-4 shadow-[0_4px_0_#000]">
-                    <div
-                      className="h-2 mb-3 rounded-full"
-                      style={statStrip(['#00DB96', '#90DCFF', '#E10086', '#FDFB76'])}
-                    ></div>
-                    <p className="text-[#90DCFF] text-[10px] tracking-[0.2em]">TOTAL XP</p>
-                    <p className="text-[#FDFB76] text-2xl mt-2">
-                      {user.totalXp.toLocaleString()}
-                    </p>
-                    <p className="text-gray-300 text-[9px] mt-1">Lifetime quests</p>
-                  </div>
-                  <div className="bg-[#190f33] border-2 border-black text-center px-3 py-4 shadow-[0_4px_0_#000]">
-                    <div
-                      className="h-2 mb-3 rounded-full"
-                      style={statStrip(['#FDFB76', '#E10086', '#00DB96'])}
-                    ></div>
-                    <p className="text-[#90DCFF] text-[10px] tracking-[0.2em]">STAR COINS</p>
-                    <p className="text-[#FDFB76] text-2xl mt-2">
-                      {user.starCoins.toLocaleString()}
-                    </p>
-                    <p className="text-gray-300 text-[9px] mt-1">Spend in Reward Hall</p>
-                  </div>
-                </div>
-
-                <div className="bg-[#0b0717] border-[3px] border-[#00DB96] p-4 space-y-3">
-                  <div className="flex flex-wrap gap-3 items-center">
-                    <div className="text-[#FDFB76] text-[10px] uppercase tracking-widest">
-                      Friend Code
-                    </div>
-                    <div className="text-[12px] bg-black border-2 border-[#90DCFF] px-3 py-1 text-[#90DCFF]">
-                      {user.friendCodeShort}
-                    </div>
-                    <button
-                      onClick={handleCopyFriendCode}
-                      className="border-[3px] border-black bg-[#00DB96] text-black px-3 py-1 text-[10px] shadow-[2px_2px_0_#000]"
-                    >
-                      Copy
-                    </button>
-                    <span className="text-[#90DCFF] text-[9px]">{copyStatus}</span>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[#FDFB76] text-[10px] uppercase tracking-widest">
-                      Add Friend
-                    </label>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        value={friendInput}
-                        onChange={(e) => setFriendInput(e.target.value)}
-                        placeholder="Enter friend code (e.g. N1NA-7F9D)"
-                        className="flex-1 bg-black border-2 border-[#90DCFF] px-3 py-2 text-xs text-white"
-                      />
-                      <button
-                        onClick={handleAddFriend}
-                        className="border-[3px] border-black bg-[#E10086] text-white px-4 py-2 text-[10px] shadow-[3px_3px_0_#000]"
-                      >
-                        Add
-                      </button>
-                    </div>
-                    <p className="text-[#90DCFF] text-[9px]">
-                      Short friend codes are mapped to internal IDs on the backend. This UI only
-                      handles the cozy part.
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="bg-[#1c1133] border-[3px] border-[#49297E] shadow-[0_0_0_3px_#000,0_8px_0_#000] p-5 space-y-4">
-                <div className="flex flex-col gap-3">
-                  <p className="text-[#FDFB76] text-sm uppercase">Avatar Selection</p>
-                  <p className="text-[#90DCFF] text-[10px]">
-                    Pick your pixel alter ego. The vacuum will respect you more.
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={selectedAvatar}
-                      alt="Avatar preview"
-                      className="w-24 h-24 border-4 border-black bg-black"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
-                    <button
-                      onClick={() => onUpdateAvatar(selectedAvatar)}
-                      disabled={saving}
-                      className="border-4 border-black bg-[#E10086] text-white px-4 py-2 text-xs shadow-[4px_4px_0_#000] disabled:opacity-50"
-                    >
-                      {saving ? 'Saving...' : '💾 Save Avatar'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {AVATAR_OPTIONS.map((avatar) => {
-                    const isSelected = selectedAvatar === avatar.data;
-                    return (
-                      <button
-                        key={avatar.id}
-                        onClick={() => setSelectedAvatar(avatar.data)}
-                        className={`relative px-4 py-5 text-left border-[3px] border-black shadow-[0_4px_0_#000] transition-transform ${
-                          isSelected
-                            ? 'bg-gradient-to-br from-[#49297E] to-[#12091f] border-[#00DB96] -translate-y-1'
-                            : 'bg-[#1a1030] hover:-translate-y-1'
-                        }`}
-                        style={
-                          isSelected
-                            ? {
-                                outline: '3px solid transparent',
-                                outlineOffset: '2px',
-                                backgroundImage:
-                                  'linear-gradient(135deg, #49297E, #12091f), linear-gradient(90deg, #00DB96, #90DCFF, #E10086, #FDFB76)',
-                                backgroundOrigin: 'border-box',
-                                boxShadow: '0 0 0 3px #00DB96',
-                              }
-                            : undefined
-                        }
-                      >
-                        {isSelected && (
-                          <span className="absolute -top-3 right-2 text-[8px] bg-[#00DB96] text-black px-2 border-2 border-black">
-                            Equipped
-                          </span>
-                        )}
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-12 h-12 border-2 border-black bg-black flex items-center justify-center"
-                            style={{ imageRendering: 'pixelated' }}
-                          >
-                            <span className="text-2xl">{avatar.emoji}</span>
-                          </div>
-                          <div>
-                            <p className="text-xs text-[#FDFB76]">{avatar.label}</p>
-                            <p className="text-[9px] text-[#90DCFF] mt-1">
-                              Cozy pixel alter ego unlocked.
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

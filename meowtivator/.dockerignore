@@ -8,8 +8,8 @@ yarn-error.log*
 build
 dist
 
-# Environment files
-.env
+# Environment files (keep .env so it gets copied to container)
+# .env
 .env.local
 .env.development.local
 .env.test.local
